@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setup(name='gym-ncs',
       version='0.0.1',
       author='Burak Demirel',
-      author_email='burak.demirel@ericsson.com',
+      author_email='burak.demirel@protonmail.com',
       description='Periodic scheduling of independent feedback control loops.',
       url='https://github.com/demirelbu/sampleproject',
       packages=find_packages(),
