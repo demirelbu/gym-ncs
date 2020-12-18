@@ -6,7 +6,7 @@
 
 ```python
 git clone https://github.com/demirelbu/gym-ncs.git
-cd gym_ncs
+cd gym-ncs
 pip install -e .
 ```
 
