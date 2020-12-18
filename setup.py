@@ -8,7 +8,7 @@ setup(name='gym-ncs',
       author='Burak Demirel',
       author_email='burak.demirel@protonmail.com',
       description='Periodic scheduling of independent feedback control loops.',
-      url='https://github.com/demirelbu/sampleproject',
+      url='https://github.com/demirelbu/gym-ncs',
       packages=find_packages(),
       install_requires=['gym~=0.17', 'numpy~=1.19', 'scipy~=1.5'],
       python_requires='~=3.8'
