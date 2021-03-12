@@ -1,4 +1,4 @@
-# Periodic Scheduling
+# Periodic Scheduling: Independent closed-loop control systems
 
 ## Installation
 
