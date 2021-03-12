@@ -1,81 +1,100 @@
 import numpy as np
-
 import gym
 from gym import spaces, logger
-from gym.spaces import Discrete, Box
 from gym.utils import seeding
-
-from gym_ncs.envs.costfunctions import costfunction
+from gym_ncs.envs.cost_function import CostFunction
 from gym_ncs.envs.helpers import find_all_allocation_options
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 class SchedulingEnv(gym.Env):
     """
     Description:
-        A pole is attached by an un-actuated joint to a cart, which moves along
-        a frictionless track. The pendulum starts upright, and the goal is to
-        prevent it from falling over by increasing and reducing the cart's
-        velocity.
+        A networked control system consists of N independent linear feedback
+        control loops, sharing a communication network with M channels (M<N).
+        A scheduling protocol that produces periodic communication sequences,
+        dictates which feedback loops should utilize all available channels.
+        The goal is to find the periodic communication sequence that minimizes
+        the overall control loss of the networked control system.
+
     Source:
-        This environment corresponds to the version of the cart-pole problem
-        described by Barto, Sutton, and Anderson
+        This environment corresponds to the version of the periodic scheduling problem
+        described by Demirel and Aytekin.
+
     Observation:
         Type: Box(p)
-        Num     Observation               Min                     Max
-        0       Cart Position             -4.8                    4.8
-        1       Cart Velocity             -Inf                    Inf
-        2       Pole Angle                -0.418 rad (-24 deg)    0.418 rad (24 deg)
-        p - 1        Pole Angular Velocity     -Inf                    Inf
+        Num     Observation                         Min                    Max
+        0       First element of com. sequence       0                     (n choose k)-1
+        .
+        .
+        .
+        p-1     Last element of com. sequence        0                     (n choose k)-1
+
+        Note: Here, p denotes the period of the communication seqquence.
+
     Actions:
         Type: Discrete(n choose k)
-        Num   Action
-        0     Push cart to the left
-        1     Push cart to the right
-        Note: The amount the velocity that is reduced or increased is not
-        fixed; it depends on the angle the pole is pointing. This is because
-        the center of gravity of the pole increases the amount of energy needed
-        to move the cart underneath it
+        Num                 Action
+        0                   First element of the action sequence
+        .
+        .
+        .
+        (n choose k)-1      Last element of the action sequence
+
+        Note: Action sequence contains all possible combinations of control system and channel assignment.
+        Here, n denotes the number of control systems while k denotess the number of channels.
+
     Reward:
-        Reward is 1 for every step taken, including the termination step
+        Reward is either a floating point number which is less than max_value or zero.
+
     Starting State:
-        All observations are assigned a uniform random value in [-0.05..0.05]
+        All elements in the periodic communication sequence are set to -1.
+
     Episode Termination:
-        Pole Angle is more than 12 degrees.
+        When the last element in the periodic communication sequence is chosen.
     """
-    def __init__(self, system_parameters, period):
+
+    def __init__(self, nUsers: int, nChannels: int, system_parameters: Dict[str, Any], period: int) -> None:
+        super(SchedulingEnv, self).__init__()
         # setting the period
         self.period = period
         # determining the action set
-        self.action_set = find_all_allocation_options(system_parameters['no_plants'], system_parameters['no_channels'])
+        self.action_set = find_all_allocation_options(nUsers, nChannels)
         # instantiating the cost function
-        self.costfunc = costfunction(system_parameters)
+        self.costfunc = CostFunction(nUsers, nChannels, system_parameters)
         # defining action and observation spaces
-        self.action_space = Discrete(len(self.action_set))
-        self.observation_space = Box(low=-1, high=len(self.action_set), shape=(self.period,), dtype=np.int64)
+        self.action_space = spaces.Discrete(len(self.action_set))
+        self.observation_space = spaces.Box(
+            low=-1, high=len(self.action_set), shape=(self.period,), dtype=np.int64)
         # initializing the seed
         self.seed()
         # initializing the state
-        self.state = np.negative(np.ones((self.period,), dtype=np.int64))
+        self.state: np.ndarray = np.negative(
+            np.ones((self.period,), dtype=np.int64))
 
-    def seed(self, seed=None):
+    def seed(self, seed: Optional[int] = None) -> List[Union[int, None]]:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Any]:
+        assert self.action_space.contains(
+            action), "%r (%s) invalid" % (action, type(action))
         if np.all(self.state >= 0):
-            logger.warn("You are calling 'step()' even though this environment has already returned done = True. You should always call 'reset()' once you receive 'done = True' -- any further steps are undefined behavior.")
+            logger.warn("You are calling 'step()' even though this environment \
+                has already returned done = True. You should always call 'reset()' \
+                    once you receive 'done = True' -- any further steps are undefined behavior.")
 
         for idx, element in enumerate(self.state):
             if element < 0:
                 self.state[idx] = action
                 break
         done = True if np.all(self.state >= 0) else False
-        reward = self.normalize(self.costfunc(self.state)) if done else 0.0 # normalized reward
+        reward = self.normalize(self.costfunc(
+            self.state)) if done else 0.0  # normalized reward
         return self.state, reward, done, {}
 
-    def reset(self):
-        self.state = np.negative(np.ones((self.period,), dtype=np.int64))
+    def reset(self) -> np.ndarray:
+        self.state: np.ndarray = np.negative(np.ones((self.period,), dtype=np.int64))
         return self.state
 
     @staticmethod
