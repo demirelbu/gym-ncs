@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='gym-ncs',
-      version='0.0.1',
+      version='0.1.0',
       author='Burak Demirel',
       author_email='burak.demirel@protonmail.com',
       description='Periodic scheduling of independent feedback control loops.',
