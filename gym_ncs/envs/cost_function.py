@@ -9,7 +9,7 @@ class CostFunction:
         allocating multiple communication channels to multiple feedback control systems.
     """
 
-    def __init__(self, nUsers:int, nChannels: int, variables: Dict[str, Any], maxvalue: float = 25000.0) -> None:
+    def __init__(self, nUsers: int, nChannels: int, variables: Dict[str, Any], maxvalue: float = 25000.0) -> None:
         """Inits CostFunction with the number of control systems, the number of channels,
         system matrices, and the maximum value of the cost function."""
         self.nUsers = nUsers
